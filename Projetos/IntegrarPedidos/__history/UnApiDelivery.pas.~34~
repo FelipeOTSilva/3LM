@@ -1,0 +1,125 @@
+unit UnApiDelivery;
+
+interface
+
+uses
+  System.JSON, idhttp;
+
+type
+  TAPIDelivery = class
+  private
+    FHTTP: TIdHTTP;
+    FBaseURL: string;
+    FToken: string;
+    FClientID: String;
+    FClientSecret: String;
+
+    Procedure Autenticar;
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    function AbrirLoja: Boolean;
+    function BuscarPedidos: TJSONArray;
+    function ConfirmarPedido(ID: string): Boolean;
+  end;
+
+implementation
+
+uses
+  IdSSLOpenSSL, IdGlobal, System.SysUtils, System.Classes;
+
+{ TDeliveryAPI }
+
+function TAPIDelivery.AbrirLoja: Boolean;
+Const
+  CUrlAbrirLoja = 'https://merchant-api.ifood.com.br/events/v1.0/events:polling';
+Var
+  LHttp: TIdHTTP;
+  LResp, LIdPedido: String;
+  LJSONResp: TJSONObject;
+begin
+  LHttp := TidHttp.Create;
+  Try
+     LHttp.Request.CustomHeaders.Clear;
+     LHttp.Request.CustomHeaders.AddValue('Authorization', FToken);
+
+     LResp := LHttp.Get(CUrlAbrirLoja);
+
+     If LHttp.ResponseCode = 200 Then
+     Begin
+       LJSONResp := TJSONObject.ParseJSONValue(LResp) as TJSONObject;
+       LIdPedido := LJSONResp.GetValue<string>('orderId');
+
+       ConfirmarPedido(LIdPedido);
+     End;
+  Finally
+    FreeAndNil(LHttp);
+  End;
+
+end;
+
+procedure TAPIDelivery.Autenticar;
+Const
+  CUrl = 'https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token';
+Var
+  LParams: TStringList;
+  LResp: string;
+  LSSL: TIdSSLIOHandlerSocketOpenSSL;
+  LJSONResp: TJSONObject;
+begin
+  LSSL := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+  FHTTP.IOHandler := LSSL;
+
+  LParams := TStringList.Create;
+  Try
+    LParams.Add('grant_type=client_credentials');
+    LParams.Add('client_id=' + FClientID);
+    LParams.Add('client_secret=' + FClientSecret);
+
+    FHTTP.Request.ContentType := 'application/x-www-form-urlencoded';
+    LResp := FHTTP.Post(CUrl, LParams);
+    LJSONResp := TJSONObject.ParseJSONValue(LResp) as TJSONObject;
+    FToken := 'Bearer ' + LJSONResp.GetValue<string>('access_token');
+
+  Finally
+    FreeAndNil(LSSL);
+    FreeAndNil(LParams);
+  End;
+end;
+
+function TAPIDelivery.BuscarPedidos: TJSONArray;
+var
+  LResp: string;
+  LJSONObj: TJSONObject;
+Begin
+  FHTTP.Request.CustomHeaders.Clear;
+  FHTTP.Request.CustomHeaders.AddValue('Authorization', FToken);
+  FHTTP.Request.ContentType := 'application/json';
+
+
+end;
+
+function TAPIDelivery.ConfirmarPedido(ID: string): Boolean;
+begin
+
+end;
+
+constructor TAPIDelivery.Create;
+begin
+  FHTTP := TIdHTTP.Create(nil);
+  FHTTP.Request.ContentType := 'application/json';
+  FClientID := 'd3081bb1-9ef9-42c1-b5d5-36ece53ae9de';
+  FClientSecret :=
+    'r44qpt752p37rve8sfau44bgvogg3l6cox7k067s9p8e5zmz793jktv5wogkf3v8u0o4zblfg5eyjc25uu7shbmszaoyaygwetq';
+  Autenticar;
+
+end;
+
+destructor TAPIDelivery.Destroy;
+begin
+   FreeAndNil(FHTTP);
+  inherited;
+end;
+
+end.

@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2025/07/14 12:22:51.000.723,=C:\Users\felip\OneDrive\Documentos\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>2025/07/14 12:26:19.000.725,C:\Users\felip\OneDrive\Documentos\Embarcadero\Studio\Projects\Unit1.pas=C:\3LM\Projetos\IntegrarPedidos\UnIntegracaoPedidosFrm.pas</Transaction>
+    <Transaction>2025/07/14 12:26:19.000.725,C:\Users\felip\OneDrive\Documentos\Embarcadero\Studio\Projects\Unit1.dfm=C:\3LM\Projetos\IntegrarPedidos\UnIntegracaoPedidosFrm.dfm</Transaction>
+    <Transaction>2025/07/14 12:26:39.000.281,C:\Users\felip\OneDrive\Documentos\Embarcadero\Studio\Projects\Project1.dproj=C:\3LM\Projetos\IntegrarPedidos\PrjIntegracaoPedidos.dproj</Transaction>
+    <Transaction>2025/07/14 12:27:03.000.211,=C:\3LM\Projetos\IntegrarPedidos\Unit1.pas</Transaction>
+    <Transaction>2025/07/14 12:27:34.000.470,C:\3LM\Projetos\IntegrarPedidos\Unit1.pas=C:\3LM\Projetos\IntegrarPedidos\UnApiDelivery.pas</Transaction>
+  </Transactions>
+</BorlandProject>
