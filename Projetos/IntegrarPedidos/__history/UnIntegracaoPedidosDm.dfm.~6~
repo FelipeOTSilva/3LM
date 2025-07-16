@@ -1,0 +1,64 @@
+object DmIntegracaoPedidos: TDmIntegracaoPedidos
+  OnCreate = DataModuleCreate
+  Height = 358
+  Width = 540
+  PixelsPerInch = 120
+  object FDConnection1: TFDConnection
+    Params.Strings = (
+      'DriverID=FB'
+      'Database=C:\3LM\BancoDeDados\PDV.FDB'
+      'User_Name=sysdba'
+      'Password=masterkey'
+      'Server=localhost'
+      'Protocol=TCPIP')
+    Connected = True
+    LoginPrompt = False
+    Left = 352
+    Top = 80
+  end
+  object FDQryPedidos: TFDQuery
+    Connection = FDConnection1
+    SQL.Strings = (
+      'SELECT PEDIDO.ID_PEDIDO,'
+      '       PEDIDO.CLIENTE_NOME,'
+      '       PEDIDO.ENDERECO_ENTREGA,'
+      '       PEDIDO.DATA_PEDIDO,'
+      '       PEDIDO.TOTAL,'
+      '       PEDIDO.JSON_ORIGINAL'
+      '  FROM PEDIDO')
+    Left = 72
+    Top = 48
+  end
+  object FDQryItens: TFDQuery
+    MasterSource = DsPedido
+    MasterFields = 'ID_PEDIDO'
+    Connection = FDConnection1
+    SQL.Strings = (
+      'SELECT PEDIDO_PRODUTOS.ID_PEDIDO_PRODUTOS,'
+      '        PEDIDO_PRODUTOS.ID_PEDIDO,'
+      '        PEDIDO_PRODUTOS.NOME_PRODUTO,'
+      '        PEDIDO_PRODUTOS.QUANTIDADE,'
+      '        PEDIDO_PRODUTOS.VLR_UNITARIO'
+      '   FROM PEDIDO_PRODUTOS'
+      '  WHERE PEDIDO_PRODUTOS.ID_PEDIDO = :ID_PEDIDO')
+    Left = 72
+    Top = 112
+    ParamData = <
+      item
+        Name = 'ID_PEDIDO'
+        DataType = ftInteger
+        ParamType = ptInput
+        Value = Null
+      end>
+  end
+  object DsPedido: TDataSource
+    DataSet = FDQryPedidos
+    Left = 184
+    Top = 48
+  end
+  object DsItens: TDataSource
+    DataSet = FDQryItens
+    Left = 184
+    Top = 112
+  end
+end

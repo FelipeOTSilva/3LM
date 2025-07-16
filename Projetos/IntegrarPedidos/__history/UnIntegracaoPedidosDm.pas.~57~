@@ -1,0 +1,203 @@
+unit UnIntegracaoPedidosDm;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, FireDAC.Stan.Intf, FireDAC.Stan.Option,
+  FireDAC.Stan.Error, FireDAC.UI.Intf, FireDAC.Phys.Intf, FireDAC.Stan.Def,
+  FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys, FireDAC.Phys.FB,
+  FireDAC.Phys.FBDef, FireDAC.VCLUI.Wait, FireDAC.Stan.Param, FireDAC.DatS,
+  FireDAC.DApt.Intf, FireDAC.DApt, Data.DB, FireDAC.Comp.DataSet,
+  FireDAC.Comp.Client, System.JSON;
+
+type
+  TDmIntegracaoPedidos = class(TDataModule)
+    FDConnection1: TFDConnection;
+    FDQryPedidos: TFDQuery;
+    FDQryItens: TFDQuery;
+    DsPedido: TDataSource;
+    DsItens: TDataSource;
+    FDQryPagamentos: TFDQuery;
+    procedure DataModuleCreate(Sender: TObject);
+  private
+    { Private declarations }
+    Procedure InserirDadosPedido(APedidoObj: TJSONObject);
+    Procedure InserirDadosProdutosPedido(APedidoObj: TJSONObject);
+    Procedure InserirDadosPagamentoPedido(APedidoObj: TJSONObject);
+    Function BuscarProximoID(AGenerator: String): Int64;
+  public
+    { Public declarations }
+    Procedure InserirPedidoBD(APedidoObj: TJSONObject);
+  end;
+
+var
+  DmIntegracaoPedidos: TDmIntegracaoPedidos;
+
+implementation
+
+Uses
+  vcl.Dialogs;
+
+{%CLASSGROUP 'Vcl.Controls.TControl'}
+{$R *.dfm}
+
+function TDmIntegracaoPedidos.BuscarProximoID(AGenerator: String): Int64;
+Const
+  CSql = 'SELECT GEN_ID(%0:S, 1) AS NOVO_ID FROM RDB$DATABASE';
+Var
+  LFdQueryGenerator: TFDQuery;
+begin
+  LFdQueryGenerator := TFDQuery.Create(Nil);
+  Try
+    LFdQueryGenerator.Connection := FDConnection1;
+
+    LFdQueryGenerator.Close;
+    LFdQueryGenerator.Sql.Text := Format(CSql, [AGenerator]);
+    LFdQueryGenerator.Open();
+
+    Result := LFdQueryGenerator.FieldByName('NOVO_ID').AsLargeInt;
+  Finally
+    FreeAndNil(LFdQueryGenerator);
+  End;
+
+end;
+
+procedure TDmIntegracaoPedidos.DataModuleCreate(Sender: TObject);
+begin
+  FDConnection1.Connected := True;
+
+  FDQryPedidos.Open;
+  FDQryItens.Open;
+  FDQryPagamentos.Open;
+end;
+
+procedure TDmIntegracaoPedidos.InserirDadosPagamentoPedido
+  (APedidoObj: TJSONObject);
+Var
+  LPedidoPagamentosArray: TJSONArray;
+  LPedidoPagamento: TJSONObject;
+  I: integer;
+begin
+  LPedidoPagamentosArray := APedidoObj.GetValue<TJSONObject>('payments')
+    .GetValue<TJSONArray>('methods');
+  If Assigned(LPedidoPagamentosArray) Then
+  Begin
+    For I := 0 to LPedidoPagamentosArray.Count -1 Do
+    Begin
+      LPedidoPagamento := LPedidoPagamentosArray.Items[I] as TJSONObject;
+
+      FDQryPagamentos.Append;
+
+      FDQryPagamentos.FieldByName('ID_PEDIDO_PAGAMENTO').AsLargeInt :=
+        BuscarProximoID('GN_PEDIDO_PAGAMENTO');
+
+      FDQryPagamentos.FieldByName('FORMA_PAGAMENTO').AsString :=
+        LPedidoPagamento.GetValue<String>('method');
+
+      FDQryPagamentos.FieldByName('VALOR').AsCurrency :=
+        LPedidoPagamento.GetValue<integer>('value');
+
+      FDQryPagamentos.Post;
+    End;
+  End;
+end;
+
+procedure TDmIntegracaoPedidos.InserirDadosPedido(APedidoObj: TJSONObject);
+begin
+  FDQryPedidos.Append;
+
+  FDQryPedidos.FieldByName('ID_PEDIDO').AsLargeInt :=
+    BuscarProximoID('GN_PEDIDO');
+
+  // NOME DO CLIENTE
+  FDQryPedidos.FieldByName('CLIENTE_NOME').AsString :=
+    APedidoObj.GetValue<TJSONObject>('customer').GetValue<string>('name');
+
+  // ENDEREÇO CLIENTE
+  FDQryPedidos.FieldByName('ENDERECO_ENTREGA').AsString :=
+    APedidoObj.GetValue<TJSONObject>('delivery').GetValue<TJSONObject>
+    ('deliveryAddress').GetValue<string>('formattedAddress') + ' - ' +
+    APedidoObj.GetValue<TJSONObject>('delivery').GetValue<TJSONObject>
+    ('deliveryAddress').GetValue<string>('neighborhood') + ' - ' +
+    APedidoObj.GetValue<TJSONObject>('delivery').GetValue<TJSONObject>
+    ('deliveryAddress').GetValue<string>('neighborhood') + ' -  CEP: ' +
+    APedidoObj.GetValue<TJSONObject>('delivery').GetValue<TJSONObject>
+    ('deliveryAddress').GetValue<string>('postalCode') + ' - CIDADE: ' +
+    APedidoObj.GetValue<TJSONObject>('delivery').GetValue<TJSONObject>
+    ('deliveryAddress').GetValue<string>('city') + ' - UF: ' +
+    APedidoObj.GetValue<TJSONObject>('delivery').GetValue<TJSONObject>
+    ('deliveryAddress').GetValue<string>('state');
+
+  // DATA PEDIDO
+  FDQryPedidos.FieldByName('DATA_PEDIDO').AsDateTime :=
+    APedidoObj.GetValue<TJSONObject>('delivery').GetValue<TDateTime>
+    ('deliveryDateTime');
+
+  // TOTAL
+  FDQryPedidos.FieldByName('TOTAL').AsCurrency :=
+    APedidoObj.GetValue<TJSONObject>('total').GetValue<Currency>('orderAmount');
+
+  // ORDER_ID
+  FDQryPedidos.FieldByName('ORDER_ID').AsString :=
+    APedidoObj.GetValue<string>('id');
+
+  FDQryPedidos.Post;
+end;
+
+procedure TDmIntegracaoPedidos.InserirDadosProdutosPedido
+  (APedidoObj: TJSONObject);
+Var
+  LPedidoItensArray: TJSONArray;
+  LPedidoItem: TJSONObject;
+  I: integer;
+begin
+  LPedidoItensArray := APedidoObj.GetValue<TJSONArray>('items');
+  If Assigned(LPedidoItensArray) Then
+  Begin
+    For I := 0 to LPedidoItensArray.Count -1 Do
+    Begin
+      LPedidoItem := LPedidoItensArray.Items[I] as TJSONObject;
+
+      FDQryItens.Append;
+
+      FDQryItens.FieldByName('ID_PEDIDO_PRODUTOS').AsLargeInt :=
+        BuscarProximoID('GN_PEDIDO_PRODUTOS');
+
+      FDQryItens.FieldByName('NOME_PRODUTO').AsString :=
+        LPedidoItem.GetValue<String>('name');
+
+      FDQryItens.FieldByName('QUANTIDADE').AsInteger :=
+        LPedidoItem.GetValue<integer>('quantity');
+
+      FDQryItens.FieldByName('VLR_UNITARIO').AsCurrency :=
+        LPedidoItem.GetValue<Currency>('unitPrice') +
+        LPedidoItem.GetValue<Currency>('optionsPrice');
+
+      FDQryItens.Post;
+    End;
+  End;
+end;
+
+procedure TDmIntegracaoPedidos.InserirPedidoBD(APedidoObj: TJSONObject);
+begin
+  FDConnection1.StartTransaction;
+  Try
+    InserirDadosPedido(APedidoObj);
+
+    InserirDadosProdutosPedido(APedidoObj);
+
+    InserirDadosPagamentoPedido(APedidoObj);
+
+    FDConnection1.Commit;
+
+  Except
+    on E: Exception do
+    begin
+      FDConnection1.Rollback;
+      ShowMessage('Erro ao gravar: ' + E.Message);
+    end;
+
+  End;
+end;
+
+end.

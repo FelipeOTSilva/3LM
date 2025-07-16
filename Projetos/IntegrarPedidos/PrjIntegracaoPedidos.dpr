@@ -3,7 +3,8 @@ program PrjIntegracaoPedidos;
 uses
   Vcl.Forms,
   UnIntegracaoPedidosFrm in 'UnIntegracaoPedidosFrm.pas' {Form1},
-  UnApiDelivery in 'UnApiDelivery.pas';
+  UnApiDelivery in 'UnApiDelivery.pas',
+  UnIntegracaoPedidosDm in 'UnIntegracaoPedidosDm.pas' {DmIntegracaoPedidos: TDataModule};
 
 {$R *.res}
 

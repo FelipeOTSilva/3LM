@@ -3,26 +3,27 @@ unit UnApiDelivery;
 interface
 
 uses
-  System.JSON, idhttp;
+  System.JSON, idhttp, UnIntegracaoPedidosDm;
 
 type
   TAPIDelivery = class
   private
     FHTTP: TIdHTTP;
-    FBaseURL: string;
     FToken: string;
     FClientID: String;
     FClientSecret: String;
+    FDmIntegracaoPedidos: TDmIntegracaoPedidos;
 
     Procedure Autenticar;
     procedure VerificarPedidosAConfirmar(const AJsonStr: string);
+    Function EhPedidoNovo(AJson: TJSONArray; AOrderId: string): Boolean;
   public
     constructor Create;
     destructor Destroy; override;
 
-    function AbrirLoja: Boolean;
-    function BuscarPedidos: TJSONArray;
-    function ConfirmarPedido(ID: string): Boolean;
+    Procedure AbrirLoja;
+    Procedure ConfirmarPedido(AID: string);
+    function BuscarPedido(AIdPedido: string): TJSONObject;
   end;
 
 implementation
@@ -32,26 +33,32 @@ uses
 
 { TDeliveryAPI }
 
-function TAPIDelivery.AbrirLoja: Boolean;
+Procedure TAPIDelivery.AbrirLoja;
 Const
-  CUrlAbrirLoja = 'https://merchant-api.ifood.com.br/events/v1.0/events:polling';
+  CUrlAbrirLoja =
+    'https://merchant-api.ifood.com.br/events/v1.0/events:polling';
 Var
   LHttp: TIdHTTP;
-  LResp, LIdPedido: String;
-  LJSONResp: TJSONObject;
+  LResp: String;
+  LSSL: TIdSSLIOHandlerSocketOpenSSL;
 begin
-  LHttp := TidHttp.Create;
+  LHttp := TIdHTTP.Create;
   Try
-     LHttp.Request.CustomHeaders.Clear;
-     LHttp.Request.CustomHeaders.AddValue('Authorization', FToken);
+    LSSL := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+    Lssl.SSLOptions.Method := sslvTLSv1_2;
+    Lssl.SSLOptions.SSLVersions := [sslvTLSv1_2];
+    LHTTP.IOHandler := LSSL;
 
-     LResp := LHttp.Get(CUrlAbrirLoja);
+    LHttp.Request.CustomHeaders.Clear;
+    LHttp.Request.CustomHeaders.AddValue('Authorization', FToken);
 
-     If LHttp.ResponseCode = 200 Then
-     Begin
-       VerificarPedidosAConfirmar(LResp);
-       
-     End;
+    LResp := LHttp.Get(CUrlAbrirLoja);
+
+    If LHttp.ResponseCode = 200 Then
+    Begin
+      VerificarPedidosAConfirmar(LResp);
+
+    End;
   Finally
     FreeAndNil(LHttp);
   End;
@@ -68,18 +75,20 @@ Var
   LJSONResp: TJSONObject;
 begin
   LSSL := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+  Lssl.SSLOptions.Method := sslvTLSv1_2;
+  Lssl.SSLOptions.SSLVersions := [sslvTLSv1_2];
   FHTTP.IOHandler := LSSL;
 
   LParams := TStringList.Create;
   Try
-    LParams.Add('grant_type=client_credentials');
-    LParams.Add('client_id=' + FClientID);
-    LParams.Add('client_secret=' + FClientSecret);
+    LParams.Add('grantType=client_credentials');
+    LParams.Add('clientId=' + FClientID);
+    LParams.Add('clientSecret=' + FClientSecret);
 
     FHTTP.Request.ContentType := 'application/x-www-form-urlencoded';
     LResp := FHTTP.Post(CUrl, LParams);
     LJSONResp := TJSONObject.ParseJSONValue(LResp) as TJSONObject;
-    FToken := 'Bearer ' + LJSONResp.GetValue<string>('access_token');
+    FToken := 'Bearer ' + LJSONResp.GetValue<string>('accessToken');
 
   Finally
     FreeAndNil(LSSL);
@@ -87,26 +96,55 @@ begin
   End;
 end;
 
-function TAPIDelivery.BuscarPedidos: TJSONArray;
+function TAPIDelivery.BuscarPedido(AIdPedido: string): TJSONObject;
+Const
+  CUrlBuscaPedido = 'https://merchant-api.ifood.com.br/order/v1.0/orders/%0:s';
 var
   LResp: string;
-  LJSONObj: TJSONObject;
 Begin
+  Result := Nil;
   FHTTP.Request.CustomHeaders.Clear;
   FHTTP.Request.CustomHeaders.AddValue('Authorization', FToken);
   FHTTP.Request.ContentType := 'application/json';
+  LResp := FHTTP.Get(Format(CUrlBuscaPedido,[AIdPedido]));
 
-
+  If FHTTP.ResponseCode = 200 Then
+    Result := TJSONObject.ParseJSONValue(LResp) as TJSONObject;
 end;
 
-function TAPIDelivery.ConfirmarPedido(ID: string): Boolean;
+Procedure TAPIDelivery.ConfirmarPedido(AID: string);
+Const
+  CUrlConfirmarPedido =
+    'https://merchant-api.ifood.com.br/order/v1.0/orders/';
+Var
+  LUrl: string;
+  LStream: TStringStream;
+  LSSL: TIdSSLIOHandlerSocketOpenSSL;
 begin
+  LStream := Nil;
+
+  LSSL := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+  Lssl.SSLOptions.Method := sslvTLSv1_2;
+  Lssl.SSLOptions.SSLVersions := [sslvTLSv1_2];
+
+  FHTTP.Request.CustomHeaders.Clear;
+  FHTTP.Request.CustomHeaders.AddValue('Authorization', FToken);
+//  FHTTP.Request.ContentType := 'application/json';
+  FHTTP.IOHandler := LSSL;
+
+  LUrl := CUrlConfirmarPedido + AID+'/confirm';
+  FHTTP.Post(LUrl, LStream);
+
+  If FHTTP.ResponseCode = 202 Then
+     FDmIntegracaoPedidos.InserirPedidoBD(BuscarPedido(AID));
+
 
 end;
 
 constructor TAPIDelivery.Create;
 begin
-  FHTTP := TIdHTTP.Create(nil);
+  FDmIntegracaoPedidos := TDmIntegracaoPedidos.Create(Nil);
+  FHTTP := TIdHTTP.Create;
   FHTTP.Request.ContentType := 'application/json';
   FClientID := 'd3081bb1-9ef9-42c1-b5d5-36ece53ae9de';
   FClientSecret :=
@@ -117,8 +155,36 @@ end;
 
 destructor TAPIDelivery.Destroy;
 begin
-   FreeAndNil(FHTTP);
+  FreeAndNil(FDmIntegracaoPedidos);
+  FreeAndNil(FHTTP);
   inherited;
+end;
+
+function TAPIDelivery.EhPedidoNovo(AJson: TJSONArray; AOrderId: string): Boolean;
+Var
+  LJsonValue: TJSONValue;
+  LJsonObj: TJSONObject;
+  LCodeList: TStringList;
+  LCode: string;
+begin
+  Result := False;
+  LCodeList := TStringList.Create;
+  try
+    for LJsonValue in AJson do
+    begin
+      LJsonObj := LJsonValue as TJSONObject;
+      if LJsonObj.GetValue<string>('orderId') = AOrderId then
+      begin
+        LCode := LJsonObj.GetValue<string>('code');
+        if LCodeList.IndexOf(LCode) = -1 then
+          LCodeList.Add(LCode);
+      end;
+    end;
+
+     Result := (LCodeList.Count = 1) and (LCodeList[0] = 'PLC');
+  finally
+    FreeAndNil(LCodeList);
+  end;
 end;
 
 procedure TAPIDelivery.VerificarPedidosAConfirmar(const AJsonStr: string);
@@ -133,13 +199,15 @@ Begin
     for LItem in LJSONArray do
     begin
       LPedidoObj := LItem as TJSONObject;
+
       LCodigo := LPedidoObj.GetValue<string>('code');
 
       if SameText(LCodigo, 'PLC') then
       begin
         LOrderID := LPedidoObj.GetValue<string>('orderId');
 
-        ConfirmarPedido(LOrderID);
+        If EhPedidoNovo(LJSonArray, LOrderID) Then
+          ConfirmarPedido(LOrderID);
       end;
     end;
   finally
