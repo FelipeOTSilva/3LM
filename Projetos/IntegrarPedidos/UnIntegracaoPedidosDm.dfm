@@ -56,11 +56,6 @@ object DmIntegracaoPedidos: TDmIntegracaoPedidos
     Left = 184
     Top = 48
   end
-  object DsItens: TDataSource
-    DataSet = FDQryItens
-    Left = 184
-    Top = 112
-  end
   object FDQryPagamentos: TFDQuery
     MasterSource = DsPedido
     MasterFields = 'ID_PEDIDO'

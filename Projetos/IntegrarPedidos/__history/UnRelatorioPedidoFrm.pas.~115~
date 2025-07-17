@@ -1,0 +1,145 @@
+unit UnRelatorioPedidoFrm;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Data.DB, Vcl.Grids, Vcl.DBGrids,
+  Vcl.ExtCtrls, UnRelatorioPedidoDm, ACBrBase, ACBrECFVirtual,
+  ACBrECFVirtualBuffer, ACBrECFVirtualPrinter, ACBrECFVirtualNaoFiscal, ACBrDFe,
+  ACBrNFe, ACBrECF, ACBrECFVirtualSAT, Vcl.StdCtrls, ACBrPosPrinter,
+  ACBrDFeReport, ACBrDFeDANFeReport, ACBrNFeDANFEClass, ACBrDANFCeFortesFr;
+
+type
+  TFrmRelatorioPedido = class(TForm)
+    PnlGrid: TPanel;
+    DBGridPedidos: TDBGrid;
+    DsGrid: TDataSource;
+    BtnCupom: TButton;
+    ACBrNFeDANFCeFortes1: TACBrNFeDANFCeFortes;
+    ACBrNFe1: TACBrNFe;
+    procedure FormCreate(Sender: TObject);
+    procedure BtnCupomClick(Sender: TObject);
+  private
+    { Private declarations }
+
+    FDmRelatorio: TDmRelatorioPedido;
+
+    Procedure GerarCupom;
+    Procedure ConfigurarACBr;
+  public
+    { Public declarations }
+  end;
+
+var
+  FrmRelatorioPedido: TFrmRelatorioPedido;
+
+implementation
+
+Uses
+  ACBrDevice, ACBrDFeSSL, pcnConversaoNFe, pcnConversao, ACBrNFe.Classes,
+  ACBrNFeNotasFiscais, RLPreviewForm, RLHTMLFilter, RLBarcode;
+
+{$R *.dfm}
+
+procedure TFrmRelatorioPedido.BtnCupomClick(Sender: TObject);
+begin
+  GerarCupom;
+end;
+
+procedure TFrmRelatorioPedido.ConfigurarACBr;
+begin
+  ACBrNFe1.Configuracoes.Geral.SSLLib := libNone;
+  ACBrNFe1.Configuracoes.Arquivos.PathSalvar :=
+    'C:\3LM\Projetos\IntegrarPedidos\Cupom';
+  ACBrNFe1.Configuracoes.Arquivos.Salvar := True;
+  ACBrNFe1.Configuracoes.Geral.VersaoDF := ve400;
+
+
+  ACBrNFeDANFCeFortes1.TipoDANFE := tiNFCe;
+  ACBrNFeDANFCeFortes1.MostraPreview := True;
+  ACBrNFeDANFCeFortes1.MostraSetup := False;
+
+  ACBrNFe1.DANFE := ACBrNFeDANFCeFortes1;
+end;
+
+procedure TFrmRelatorioPedido.FormCreate(Sender: TObject);
+begin
+  FDmRelatorio := TDmRelatorioPedido.Create(Self);
+
+  DsGrid.DataSet := FDmRelatorio.FDQueryPedidos;
+
+  ConfigurarACBr;
+end;
+
+procedure TFrmRelatorioPedido.GerarCupom;
+Var
+  LNota: TNFe;
+  LDet: TDetCollectionItem;
+  LItem: Integer;
+begin
+  ACBrNFe1.NotasFiscais.Clear;
+
+  LNota := ACBrNFe1.NotasFiscais.Add.NFe;
+
+
+  LNota.Emit.CNPJCPF := '12345678000199';
+  LNota.Emit.IE := '12345678';
+  LNota.Emit.xNome := 'Minha Loja Exemplo';
+  LNota.Emit.EnderEmit.xLgr := 'Rua Exemplo';
+  LNota.Emit.EnderEmit.nro := '100';
+  LNota.Emit.EnderEmit.xMun := 'Cidade';
+  LNota.Emit.EnderEmit.UF := 'SP';
+  LNota.Emit.EnderEmit.CEP := 12345678;
+  LNota.Ide.cUF := 35;
+
+
+  LNota.Dest.xNome := FDmRelatorio.FDQueryPedidos.FieldByName('CLIENTE_NOME').AsString;
+  LNota.Dest.EnderDest.UF := 'SP';
+
+
+  FDmRelatorio.FDQueryItens.First;
+  LItem := 0;
+  While Not FDmRelatorio.FDQueryItens.Eof Do
+  Begin
+    LItem := LItem + 1;
+    LDet := LNota.Det.Add;
+    LDet.Prod.cProd := IntToStr(LItem);
+    LDet.Prod.xProd := FDmRelatorio.FDQueryItens.FieldByName
+      ('NOME_PRODUTO').AsString;
+    LDet.Prod.qCom := FDmRelatorio.FDQueryItens.FieldByName('QUANTIDADE')
+      .AsInteger;
+    LDet.Prod.vUnCom := FDmRelatorio.FDQueryItens.FieldByName
+      ('VLR_UNITARIO').AsFloat;
+    LDet.Prod.vProd := FDmRelatorio.FDQueryItens.FieldByName('QUANTIDADE')
+      .AsInteger * FDmRelatorio.FDQueryItens.FieldByName
+      ('VLR_UNITARIO').AsFloat;
+    LDet.Prod.CFOP := '5102';
+    LDet.Prod.uCom := 'UN';
+
+    LDet.Imposto.vTotTrib := 0;
+    LDet.Imposto.ICMS.CST := cst00;
+    LDet.Imposto.ICMS.orig := oeNacional;
+
+     FDmRelatorio.FDQueryItens.Next;
+  end;
+
+  LNota.Total.ICMSTot.vProd := FDmRelatorio.FDQueryPedidos.FieldByName('TOTAL').AsCurrency;
+  LNota.Total.ICMSTot.vNF := LNota.Total.ICMSTot.vProd;
+
+
+  LNota.pag.Add;
+  LNota.pag[0].tPag := fpDinheiro;
+  LNota.pag[0].vPag := FDmRelatorio.FDQueryPagamentos.FieldByName('VALOR').AsCurrency;
+
+
+  LNota.InfAdic.infCpl := 'Entrega para: ' +
+    FDmRelatorio.FDQueryPedidos.FieldByName('CLIENTE_NOME').AsString + ' - ' +
+    FDmRelatorio.FDQueryPedidos.FieldByName('ENDERECO_ENTREGA').AsString;
+
+
+  ACBrNFe1.NotasFiscais.Imprimir;
+End;
+
+end.

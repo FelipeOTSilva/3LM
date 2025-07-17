@@ -1,0 +1,170 @@
+object FrmRelatorioPedido: TFrmRelatorioPedido
+  Left = 0
+  Top = 0
+  Caption = 'Relat'#243'rio'
+  ClientHeight = 441
+  ClientWidth = 624
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
+  OnCreate = FormCreate
+  TextHeight = 15
+  object PnlGrid: TPanel
+    Left = 0
+    Top = 0
+    Width = 624
+    Height = 345
+    Align = alTop
+    TabOrder = 0
+    ExplicitWidth = 622
+    object DBGridPedidos: TDBGrid
+      Left = 1
+      Top = 1
+      Width = 622
+      Height = 343
+      Align = alClient
+      DataSource = DsGrid
+      TabOrder = 0
+      TitleFont.Charset = DEFAULT_CHARSET
+      TitleFont.Color = clWindowText
+      TitleFont.Height = -12
+      TitleFont.Name = 'Segoe UI'
+      TitleFont.Style = []
+      Columns = <
+        item
+          Expanded = False
+          FieldName = 'ID_PEDIDO'
+          Title.Caption = 'Pedido'
+          Visible = True
+        end
+        item
+          Expanded = False
+          FieldName = 'DATA_PEDIDO'
+          Title.Caption = 'Data Pedido'
+          Width = 120
+          Visible = True
+        end
+        item
+          Expanded = False
+          FieldName = 'CLIENTE_NOME'
+          Title.Caption = 'Cliente'
+          Width = 417
+          Visible = True
+        end>
+    end
+  end
+  object BtnCupom: TButton
+    Left = 40
+    Top = 367
+    Width = 161
+    Height = 49
+    Caption = 'Emitir Cupom'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -16
+    Font.Name = 'Segoe UI'
+    Font.Style = [fsBold]
+    ParentFont = False
+    TabOrder = 1
+    OnClick = BtnCupomClick
+  end
+  object DsGrid: TDataSource
+    Left = 496
+    Top = 144
+  end
+  object ACBrECF1: TACBrECF
+    QuebraLinhaRodape = False
+    Porta = 'PDF:C:\3LM\Projetos\IntegrarPedidos\Cupom\PreCupom.pdf'#39
+    MsgAguarde = 'Aguardando a resposta da Impressora: %d segundos'
+    MsgTrabalhando = 'Impressora est'#225' trabalhando'
+    ExibeMensagem = False
+    MsgRelatorio = 'Imprimindo %s  %d'#170' Via '
+    MsgPausaRelatorio = 'Destaque a %d'#170' via, <ENTER> proxima, %d seg.'
+    PaginaDeCodigo = 0
+    MemoParams.Strings = (
+      '[Cabecalho]'
+      'LIN000=<center><b>Nome da Empresa</b></center>'
+      'LIN001=<center>Nome da Rua , 1234  -  Bairro</center>'
+      'LIN002=<center>Cidade  -  UF  -  99999-999</center>'
+      
+        'LIN003=<center>CNPJ: 01.234.567/0001-22    IE: 012.345.678.90</c' +
+        'enter>'
+      
+        'LIN004=<table width=100%><tr><td align=left><code>Data</code> <c' +
+        'ode>Hora</code></td><td align=right>COO: <b><code>NumCupom</code' +
+        '></b></td></tr></table>'
+      'LIN005=<hr>'
+      ' '
+      '[Cabecalho_Item]'
+      'LIN000=ITEM   CODIGO      DESCRICAO'
+      'LIN001=QTD         x UNITARIO       Aliq     VALOR (R$)'
+      'LIN002=<hr>'
+      
+        'MascaraItem=III CCCCCCCCCCCCCC DDDDDDDDDDDDDDDDDDDDDDDDDDDDDQQQQ' +
+        'QQQQ UU x VVVVVVVVVVVVV AAAAAA TTTTTTTTTTTTT'
+      ' '
+      '[Rodape]'
+      'LIN000=<hr>'
+      
+        'LIN001=<table width=100%><tr><td align=left><code>Data</code> <c' +
+        'ode>Hora</code></td><td align=right>Projeto ACBr: <b><code>ACBR<' +
+        '/code></b></td></tr></table>'
+      'LIN002=<center>Obrigado Volte Sempre</center>'
+      'LIN003=<hr>'
+      ' '
+      '[Formato]'
+      'Colunas=48'
+      'HTML=1'
+      'HTML_Title_Size=2'
+      'HTML_Font=<font size="2" face="Lucida Console">')
+    ECFVirtual = ACBrECFVirtualNaoFiscal1
+    ConfigBarras.MostrarCodigo = True
+    ConfigBarras.LarguraLinha = 0
+    ConfigBarras.Altura = 0
+    ConfigBarras.Margem = 0
+    InfoRodapeCupom.Imposto.ModoCompacto = False
+    Left = 312
+    Top = 192
+  end
+  object ACBrECFVirtualNaoFiscal1: TACBrECFVirtualNaoFiscal
+    ECF = ACBrECF1
+    PosPrinter = ACBrPosPrinter1
+    Colunas = 48
+    NumECF = 1
+    NumCRO = 1
+    CNPJ = '01.234.567/0001-22'
+    IE = '012.345.678.90'
+    IM = '1234-0'
+    Cabecalho.Strings = (
+      'Nome da Empresa'
+      'Nome da Rua , 1234  -  Bairro'
+      'Cidade  -  UF  -  99999-999')
+    CabecalhoItem.Strings = (
+      'ITEM   CODIGO             DESCRICAO'
+      '.             QTDxUNITARIO   Aliq    VALOR (R$)'
+      '</linha_simples>')
+    MascaraItem = 
+      'III CCCCCCCCCCCCC DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD QQQQQQQQ U' +
+      'UxVVVVVVVVV AAAAAAA TTTTTTTTTTT'
+    ExibeAvisoLegal = True
+    Left = 456
+    Top = 240
+  end
+  object ACBrPosPrinter1: TACBrPosPrinter
+    Modelo = ppEscEpsonP2
+    Porta = 'Arquivo.txt'
+    ConfigBarras.MostrarCodigo = False
+    ConfigBarras.LarguraLinha = 0
+    ConfigBarras.Altura = 0
+    ConfigBarras.Margem = 0
+    ConfigQRCode.Tipo = 2
+    ConfigQRCode.LarguraModulo = 4
+    ConfigQRCode.ErrorLevel = 0
+    LinhasEntreCupons = 0
+    Left = 312
+    Top = 296
+  end
+end

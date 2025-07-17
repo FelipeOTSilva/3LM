@@ -129,7 +129,6 @@ begin
 
   FHTTP.Request.CustomHeaders.Clear;
   FHTTP.Request.CustomHeaders.AddValue('Authorization', FToken);
-//  FHTTP.Request.ContentType := 'application/json';
   FHTTP.IOHandler := LSSL;
 
   LUrl := CUrlConfirmarPedido + AID+'/confirm';

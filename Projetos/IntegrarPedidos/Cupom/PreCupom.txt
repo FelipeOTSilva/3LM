@@ -1,0 +1,21 @@
+@TOTAL  R$                                   0,00
+            *** CUPOM CANCELADO ***             
+------------------------------------------------
+N.Serie                        Maq 001   v0.9.0a
+Oper.                          16/07/25 22:46:27
+   ** N A O   E   C U P O M   F I S C A L **    
+================================================
+
+
+
+
+
+
+
+16/07/2025 22:46:29                   COO:000004
+          COMPROVANTE  * NAO FISCAL *           
+Cliente: PEDIDO DE TESTE - Felipe Oliveira Teixe
+ira da Silva
+Endereco: Rua TESTE, 999999 - Bairro TESTE - Bai
+rro TESTE -  CEP: 99999999 - CIDADE: TESTE - UF:
+ XX

@@ -1,0 +1,80 @@
+unit UnIntegracaoPedidosFrm;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Data.DB,
+  Datasnap.DBClient, SimpleDS, IdBaseComponent, IdComponent, IdTCPConnection,
+  IdTCPClient, IdHTTP, UnApiDelivery, Vcl.Imaging.GIFImg, Vcl.Imaging.pngimage,
+  Vcl.StdCtrls;
+
+type
+  TFrmIntegracao = class(TForm)
+    TimerAbrirLoja: TTimer;
+    LblMensagem: TLabel;
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
+    procedure TimerAbrirLojaTimer(Sender: TObject);
+  private
+    { Private declarations }
+    FDelivery: TAPIDelivery;
+    FContagemSeg: Integer;
+  public
+    { Public declarations }
+  end;
+
+var
+  FrmIntegracao: TFrmIntegracao;
+
+implementation
+
+Uses
+  RLPreviewForm, RLHTMLFilter;
+
+{$R *.dfm}
+
+procedure TFrmIntegracao.FormCreate(Sender: TObject);
+begin
+  FDelivery := TAPIDelivery.Create;
+  FContagemSeg := 30;
+end;
+
+procedure TFrmIntegracao.FormDestroy(Sender: TObject);
+begin
+  FreeAndNil(FDelivery);
+end;
+
+procedure TFrmIntegracao.TimerAbrirLojaTimer(Sender: TObject);
+Const
+  CMsgVerificação =
+    'Próxima verificação de novos pedidos em: %0:d segundo(s)...';
+  CMsgVerificandoNovosPedidos = 'Verificando se há novos pedidos...';
+
+begin
+  Dec(FContagemSeg);
+
+  If FContagemSeg = 0 Then
+  Begin
+    TimerAbrirLoja.Enabled := False;
+    LblMensagem.Caption := CMsgVerificandoNovosPedidos;
+    Application.ProcessMessages;
+    Sleep(5000);
+    Application.ProcessMessages;
+    Try
+      FDelivery.AbrirLoja;
+    Finally
+      FContagemseg := 30;
+      LblMensagem.Caption := Format(CMsgVerificação, [FContagemSeg]);
+      TimerAbrirLoja.Enabled := True;
+    End;
+
+
+  End
+  Else
+    LblMensagem.Caption := Format(CMsgVerificação, [FContagemSeg]);
+
+end;
+
+end.

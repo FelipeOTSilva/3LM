@@ -11,7 +11,7 @@ uses
   Vcl.StdCtrls;
 
 type
-  TForm1 = class(TForm)
+  TFrmIntegracao = class(TForm)
     TimerAbrirLoja: TTimer;
     LblMensagem: TLabel;
     procedure FormCreate(Sender: TObject);
@@ -21,40 +21,32 @@ type
     { Private declarations }
     FDelivery: TAPIDelivery;
     FContagemSeg: Integer;
-
-    Procedure DeixarImageVisivel(AImg: TImage; AFicarVisivel: Boolean);
   public
     { Public declarations }
   end;
 
 var
-  Form1: TForm1;
+  FrmIntegracao: TFrmIntegracao;
 
 implementation
 
+Uses
+  RLPreviewForm, RLHTMLFilter, RLBarcode;
+
 {$R *.dfm}
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TFrmIntegracao.FormCreate(Sender: TObject);
 begin
   FDelivery := TAPIDelivery.Create;
   FContagemSeg := 30;
-  // TGIFImage(ImgGif.Picture.Graphic).Animate := True;
-  // DeixarImageVisivel(ImgGif, False);
-  // DeixarImageVisivel(ImgChecked, True);
-
 end;
 
-procedure TForm1.FormDestroy(Sender: TObject);
+procedure TFrmIntegracao.FormDestroy(Sender: TObject);
 begin
   FreeAndNil(FDelivery);
 end;
 
-procedure TForm1.DeixarImageVisivel(AImg: TImage; AFicarVisivel: Boolean);
-begin
-  AImg.Visible := AFicarVisivel;
-end;
-
-procedure TForm1.TimerAbrirLojaTimer(Sender: TObject);
+procedure TFrmIntegracao.TimerAbrirLojaTimer(Sender: TObject);
 Const
   CMsgVerificação =
     'Próxima verificação de novos pedidos em: %0:d segundo(s)...';
@@ -69,6 +61,7 @@ begin
     LblMensagem.Caption := CMsgVerificandoNovosPedidos;
     Application.ProcessMessages;
     Sleep(5000);
+    Application.ProcessMessages;
     Try
       FDelivery.AbrirLoja;
     Finally

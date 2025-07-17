@@ -1,4 +1,4 @@
-object Form1: TForm1
+object FrmIntegracao: TFrmIntegracao
   Left = 0
   Top = 0
   Caption = 'Integra'#231#227'o Novos Pedidos'

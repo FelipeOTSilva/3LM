@@ -1,0 +1,63 @@
+unit UnIntegracaoPedidosMenu;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.StdCtrls;
+
+type
+  TFrmPedidos = class(TForm)
+    Button1: TButton;
+    Button2: TButton;
+    SbRelogio: TStatusBar;
+    TimerRelogio: TTimer;
+    procedure TimerRelogioTimer(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  FrmPedidos: TFrmPedidos;
+
+implementation
+
+Uses
+  UnIntegracaoPedidosFrm, UnRelatorioPedidoFrm;
+
+{$R *.dfm}
+
+procedure TFrmPedidos.Button1Click(Sender: TObject);
+Var
+  LFrmIntegracao: TFrmIntegracao;
+begin
+  LFrmIntegracao := TFrmIntegracao.Create(nil);
+  Try
+    LFrmIntegracao.ShowModal;
+  Finally
+    FreeAndNil(LFrmIntegracao);
+  End;
+end;
+
+procedure TFrmPedidos.Button2Click(Sender: TObject);
+Var
+  LFrmRelatorio: TFrmRelatorioPedido;
+begin
+  LFrmRelatorio := TFrmRelatorioPedido.Create(Nil);
+  Try
+    LFrmRelatorio.ShowModal;
+  Finally
+     FreeAndNil(LFrmRelatorio);
+  End;
+end;
+
+procedure TFrmPedidos.TimerRelogioTimer(Sender: TObject);
+begin
+  SbRelogio.Panels[1].Text := FormatDateTime('dd/mm/yyyy hh:nn:ss', Now);
+end;
+
+end.

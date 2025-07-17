@@ -126,12 +126,25 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="UnIntegracaoPedidosFrm.pas">
-            <Form>Form1</Form>
+            <Form>FrmIntegracao</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="UnApiDelivery.pas"/>
         <DCCReference Include="UnIntegracaoPedidosDm.pas">
             <Form>DmIntegracaoPedidos</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TDataModule</DesignClass>
+        </DCCReference>
+        <DCCReference Include="UnIntegracaoPedidosMenu.pas">
+            <Form>FrmPedidos</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="UnRelatorioPedidoFrm.pas">
+            <Form>FrmRelatorioPedido</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="UnRelatorioPedidoDm.pas">
+            <Form>DmRelatorioPedido</Form>
             <FormType>dfm</FormType>
             <DesignClass>TDataModule</DesignClass>
         </DCCReference>

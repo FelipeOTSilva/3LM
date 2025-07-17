@@ -1,0 +1,147 @@
+unit UnRelatorioPedidoFrm;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Data.DB, Vcl.Grids, Vcl.DBGrids,
+  Vcl.ExtCtrls, UnRelatorioPedidoDm, ACBrBase, ACBrECFVirtual,
+  ACBrECFVirtualBuffer, ACBrECFVirtualPrinter, ACBrECFVirtualNaoFiscal, ACBrDFe,
+  ACBrNFe, ACBrECF, ACBrECFVirtualSAT, Vcl.StdCtrls, ACBrPosPrinter,
+  ACBrDFeReport, ACBrDFeDANFeReport, ACBrNFeDANFEClass, ACBrDANFCeFortesFr;
+
+type
+  TFrmRelatorioPedido = class(TForm)
+    PnlGrid: TPanel;
+    DBGridPedidos: TDBGrid;
+    DsGrid: TDataSource;
+    BtnCupom: TButton;
+    ACBrECF1: TACBrECF;
+    ACBrECFVirtualNaoFiscal1: TACBrECFVirtualNaoFiscal;
+    ACBrPosPrinter1: TACBrPosPrinter;
+    ACBrNFeDANFCeFortes1: TACBrNFeDANFCeFortes;
+    ACBrNFe1: TACBrNFe;
+    procedure FormCreate(Sender: TObject);
+    procedure BtnCupomClick(Sender: TObject);
+  private
+    { Private declarations }
+
+    FDmRelatorio: TDmRelatorioPedido;
+
+    Procedure GerarCupom;
+    Procedure ConfigurarACBr;
+  public
+    { Public declarations }
+  end;
+
+var
+  FrmRelatorioPedido: TFrmRelatorioPedido;
+
+implementation
+
+Uses
+  ACBrDevice, ACBrDFeSSL, pcnConversaoNFe, pcnConversao, ACBrNFe.Classes,
+  ACBrUtil, ACBrNFeNotasFiscais;
+
+{$R *.dfm}
+
+procedure TFrmRelatorioPedido.BtnCupomClick(Sender: TObject);
+begin
+  GerarCupom;
+end;
+
+procedure TFrmRelatorioPedido.ConfigurarACBr;
+begin
+  ACBrNFe1.Configuracoes.Geral.SSLLib := libNone;
+  ACBrNFe1.Configuracoes.Arquivos.PathSalvar :=
+    'C:\3LM\Projetos\IntegrarPedidos\Cupom';
+  ACBrNFe1.Configuracoes.Arquivos.Salvar := True;
+  ACBrNFe1.Configuracoes.Geral.VersaoDF := ve400;
+
+
+  ACBrNFeDANFCeFortes1.TipoDANFE := tiNFCe;
+  ACBrNFeDANFCeFortes1.MostraPreview := True;
+  ACBrNFeDANFCeFortes1.MostraSetup := False;
+
+  ACBrNFe1.DANFE := ACBrNFeDANFCeFortes1;
+end;
+
+procedure TFrmRelatorioPedido.FormCreate(Sender: TObject);
+begin
+  FDmRelatorio := TDmRelatorioPedido.Create(Self);
+
+  DsGrid.DataSet := FDmRelatorio.FDQueryPedidos;
+
+  ConfigurarACBr
+end;
+
+procedure TFrmRelatorioPedido.GerarCupom;
+Var
+  Nota: TNFe;
+  Det: TDetCollectionItem;
+begin
+  ACBrNFe1.NotasFiscais.Clear;
+
+  Nota := ACBrNFe1.NotasFiscais.Add.NFe;
+
+
+  Nota.Emit.CNPJCPF := '12345678000199';
+  Nota.Emit.IE := '12345678';
+  Nota.Emit.xNome := 'Minha Loja Exemplo';
+  Nota.Emit.EnderEmit.xLgr := 'Rua Exemplo';
+  Nota.Emit.EnderEmit.nro := '100';
+  Nota.Emit.EnderEmit.xMun := 'Cidade';
+  Nota.Emit.EnderEmit.UF := 'SP';
+  Nota.Emit.EnderEmit.CEP := 12345678;
+  Nota.Ide.cUF := 35;
+
+
+  Nota.Dest.xNome := FDmRelatorio.FDQueryPedidos.FieldByName('CLIENTE_NOME').AsString;
+  Nota.Dest.EnderDest.UF := 'SP';
+
+
+  FDmRelatorio.FDQueryItens.First;
+  LItem := 0;
+  While Not FDmRelatorio.FDQueryItens.Eof Do
+  Begin
+    LItem := LItem + 1;
+    Det := Nota.Det.Add;
+    Det.Prod.cProd := IntToStr(LItem);
+    Det.Prod.xProd := FDmRelatorio.FDQueryItens.FieldByName
+      ('NOME_PRODUTO').AsString;
+    Det.Prod.qCom := FDmRelatorio.FDQueryItens.FieldByName('QUANTIDADE')
+      .AsInteger;
+    Det.Prod.vUnCom := FDmRelatorio.FDQueryItens.FieldByName
+      ('VLR_UNITARIO').AsFloat;
+    Det.Prod.vProd := FDmRelatorio.FDQueryItens.FieldByName('QUANTIDADE')
+      .AsInteger * FDmRelatorio.FDQueryItens.FieldByName
+      ('VLR_UNITARIO').AsFloat;
+    Det.Prod.CFOP := '5102';
+    Det.Prod.uCom := 'UN';
+
+    Det.Imposto.vTotTrib := 0;
+    Det.Imposto.ICMS.CST := cst00;
+    Det.Imposto.ICMS.orig := oeNacional;
+
+     FDmRelatorio.FDQueryItens.Next;
+  end;
+
+  Nota.Total.ICMSTot.vProd := FDmRelatorio.FDQueryPedidos.FieldByName('TOTAL').AsCurrency;
+  Nota.Total.ICMSTot.vNF := Nota.Total.ICMSTot.vProd;
+
+
+  Nota.pag.Add;
+  Nota.pag[0].tPag := fpDinheiro;
+  Nota.pag[0].vPag := FDmRelatorio.FDQueryPagamentos.FieldByName('VALOR').AsCurrency;
+
+
+  Nota.InfAdic.infCpl := 'Entrega para: ' +
+    FDmRelatorio.FDQueryPedidos.FieldByName('CLIENTE_NOME').AsString + ' - ' +
+    FDmRelatorio.FDQueryPedidos.FieldByName('ENDERECO_ENTREGA').AsString;
+
+
+  ACBrNFe1.NotasFiscais.Imprimir;
+End;
+
+end.

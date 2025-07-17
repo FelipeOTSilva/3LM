@@ -1,0 +1,20 @@
+object DmRelatorioPedido: TDmRelatorioPedido
+  Height = 206
+  Width = 416
+  PixelsPerInch = 120
+  object FDConnection1: TFDConnection
+    Params.Strings = (
+      'DriverID=FB'
+      'Database=C:\3LM\BancoDeDados\PDV.FDB'
+      'Password=masterkey'
+      'User_Name=sysdba')
+    LoginPrompt = False
+    Left = 120
+    Top = 48
+  end
+  object FDQueryPedidos: TFDQuery
+    Connection = FDConnection1
+    Left = 248
+    Top = 48
+  end
+end

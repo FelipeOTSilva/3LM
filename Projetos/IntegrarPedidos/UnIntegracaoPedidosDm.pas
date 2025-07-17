@@ -16,7 +16,6 @@ type
     FDQryPedidos: TFDQuery;
     FDQryItens: TFDQuery;
     DsPedido: TDataSource;
-    DsItens: TDataSource;
     FDQryPagamentos: TFDQuery;
     procedure DataModuleCreate(Sender: TObject);
   private
